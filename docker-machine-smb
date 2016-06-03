@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+# Console colors
+red='\033[0;31m'
+green='\033[0;32m'
+green_bg='\033[42m'
+yellow='\033[1;33m'
+NC='\033[0m'
+
+#---------------------------- Helper functions --------------------------------
+
+echo-red () { echo -e "${red}$1${NC}"; }
+echo-green () { echo -e "${green}$1${NC}"; }
+echo-green-bg () { echo -e "${green_bg}$1${NC}"; }
+echo-yellow () { echo -e "${yellow}$1${NC}"; }
+
+#---------------------------- Global Constants --------------------------------
+
+DOCKER_SMB_USERNAME='docker'
+DOCKER_SMB_PASSWORD='P@ssW0rd1!'
+DOCKER_SMB_SHARENAME='projects2'
+DOCKER_SMB_SHAREPATH=$(cygpath -w /c/projects2)
+
+winsudo()
+{
+	cygstart --action=runas cmd /c "$@"
+}
+
+# Method to create the user and SMB network share on Windows.
+# @param share_name, path
+smb_share_add()
+{
+	# Add SMB user if it does not exist.
+	command_user="net user ${DOCKER_SMB_USERNAME} || ( net user ${DOCKER_SMB_USERNAME} ${DOCKER_SMB_PASSWORD} /add && WMIC USERACCOUNT WHERE \"Name='${DOCKER_SMB_USERNAME}'\" SET PasswordExpires=FALSE )"
+	echo-green "Adding docker SMB user..."
+	winsudo "$command_user"
+
+	# Add SMB share if it does not exist.
+	command_share="net share ${DOCKER_SMB_SHARENAME} || net share ${DOCKER_SMB_SHARENAME}=${DOCKER_SMB_SHAREPATH} /grant:${DOCKER_SMB_USERNAME},FULL"
+	echo-green "Adding docker SMB share..."
+	winsudo "$command_share"
+
+	# Set directory permissions.
+	command_permissions="icacls ${DOCKER_SMB_SHAREPATH} /grant ${DOCKER_SMB_USERNAME}:(OI)(CI)M"
+	echo-green "Setting directory permissions..."
+	winsudo "$command_permissions"
+}
+
+# Method to remove the user and SMB network share on Windows.
+# @param share_name
+smb_share_remove()
+{
+	# Revert directory permissions.
+	command_permissions="icacls ${DOCKER_SMB_SHAREPATH} /remove ${DOCKER_SMB_USERNAME}"
+	echo-green "Reverting directory permissions..."
+	winsudo "$command_permissions"
+
+	# Remove SMB share
+	command_share="net share ${DOCKER_SMB_SHARENAME} /delete || echo 'Share ${DOCKER_SMB_SHARENAME} does not exist' && timeout 10"
+	echo-green "Removing docker SMB share..."
+	winsudo "$command_share"
+
+	# Remove SMB user
+	command_user="net user ${DOCKER_SMB_USERNAME} /delete || echo 'User ${DOCKER_SMB_USERNAME} does not exist' && timeout 10"
+	echo-green "Removing docker SMB user..."
+	winsudo "$command_user"
+}
+
+smb_share_mount()
+{
+	DOCKER_MACHINE_IP=$(docker-machine ip ${DOCKER_MACHINE_NAME})
+	vboxmanage="/c/Program Files/Oracle/VirtualBox/VBoxManage.exe"
+	network_id=$("$vboxmanage" showvminfo ${DOCKER_MACHINE_NAME} --machinereadable | grep hostonlyadapter | cut -d'"' -f2)
+	DOCKER_HOST_IP=$("$vboxmanage" list hostonlyifs | grep "${network_id}" -A 3 | grep IPAddress |cut -d ':' -f2 | xargs)
+
+	# TODO: change $(pwd)
+	command_mount="sudo mkdir -p $(pwd) && sudo mount -t cifs -o noperm,sec=ntlm,username='${DOCKER_SMB_USERNAME}',pass='${DOCKER_SMB_PASSWORD}',dir_mode=0777,file_mode=0777 //${DOCKER_HOST_IP}/${DOCKER_SMB_SHARENAME} $(pwd)"
+	#  sudo mount -t cifs -o noperm,sec=ntlm,username=docker,pass="P@ssW0rd1!",dir_mode=0777,file_mode=0777 //192.168.99.1/projects2 /c/projects2
+
+	docker-machine ssh ${DOCKER_MACHINE_NAME} "$command_mount"
+}
+
+usage()
+{
+	echo-yellow "Peace"
+	exit 1
+}
+
+[ "$#" -ge 2 ] || usage
+
+DOCKER_MACHINE_NAME=$1; shift
+DOCKER_SMB_SHAREPATH=$(cygpath -w $(pwd))
+DOCKER_SMB_SHARENAME=$(basename $(pwd))
+
+case $1 in
+	add)
+		smb_share_add
+		;;
+	remove)
+		smb_share_remove
+		;;
+	mount)
+		smb_share_mount
+		;;
+esac
