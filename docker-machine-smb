@@ -82,13 +82,27 @@ smb_share_mount()
 
 usage()
 {
-	echo-yellow "Peace"
-	exit 1
+	cat <<EOF
+Usage: $0 <machine-name> [add|remove]
+
+Examples:
+
+{ /c/Users/alex/projects } » docker-machine-smb add
+
+	> Share c:\Users\alex\projects folder via SMB
+
+{ /c/Users/alex/projects } » docker-machine-smb remove
+
+	> Stop sharing c:\Users\alex\projects via SMB
+EOF
+	exit
 }
 
 [ "$#" -ge 2 ] || usage
 
-DOCKER_MACHINE_NAME=$1; shift
+DOCKER_MACHINE_NAME="$1"
+shift
+
 DOCKER_SMB_SHAREPATH=$(cygpath -w $(pwd))
 DOCKER_SMB_SHARENAME=$(basename $(pwd))
 
