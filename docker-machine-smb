@@ -73,9 +73,8 @@ smb_share_mount()
 	network_id=$("$vboxmanage" showvminfo ${DOCKER_MACHINE_NAME} --machinereadable | grep hostonlyadapter | cut -d'"' -f2)
 	DOCKER_HOST_IP=$("$vboxmanage" list hostonlyifs | grep "${network_id}" -A 3 | grep IPAddress |cut -d ':' -f2 | xargs)
 
-	# TODO: change $(pwd)
-	command_mount="sudo mkdir -p $(pwd) && sudo mount -t cifs -o noperm,sec=ntlm,username='${DOCKER_SMB_USERNAME}',pass='${DOCKER_SMB_PASSWORD}',dir_mode=0777,file_mode=0777 //${DOCKER_HOST_IP}/${DOCKER_SMB_SHARENAME} $(pwd)"
-	#  sudo mount -t cifs -o noperm,sec=ntlm,username=docker,pass="P@ssW0rd1!",dir_mode=0777,file_mode=0777 //192.168.99.1/projects2 /c/projects2
+	command_mount="sudo mkdir -p $CYGWIN_PWD && sudo mount -t cifs -o noperm,sec=ntlm,username='${DOCKER_SMB_USERNAME}',pass='${DOCKER_SMB_PASSWORD}',dir_mode=0777,file_mode=0777 //${DOCKER_HOST_IP}/${DOCKER_SMB_SHARENAME} $CYGWIN_PWD"
+	# sudo mount -t cifs -o noperm,sec=ntlm,username=docker,pass="P@ssW0rd1!",dir_mode=0777,file_mode=0777 //192.168.99.1/projects2 /c/projects2
 
 	docker-machine ssh ${DOCKER_MACHINE_NAME} "$command_mount"
 }
@@ -103,8 +102,9 @@ EOF
 DOCKER_MACHINE_NAME="$1"
 shift
 
-DOCKER_SMB_SHAREPATH=$(cygpath -w $(pwd))
-DOCKER_SMB_SHARENAME=$(basename $(pwd))
+CYGWIN_PWD=$(pwd)
+DOCKER_SMB_SHAREPATH=$(cygpath -w $CYGWIN_PWD)
+DOCKER_SMB_SHARENAME=$(basename $CYGWIN_PWD)
 
 case $1 in
 	add)
