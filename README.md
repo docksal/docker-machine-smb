@@ -25,6 +25,10 @@ Examples:
 
     > Share c:\Users\alex\projects folder via SMB
 
+{ /c/Users/alex/projects } » docker-machine-smb mount
+
+    > Mount "projects" share in docker machine
+
 { /c/Users/alex/projects } » docker-machine-smb remove
 
     > Stop sharing c:\Users\alex\projects via SMB

@@ -88,7 +88,11 @@ Examples:
 
 { /c/Users/alex/projects } » docker-machine-smb add
 
-	> Share c:\Users\alex\projects folder via SMB
+	> Share c:\Users\alex\projects folder via SMB as "projects"
+
+{ /c/Users/alex/projects } » docker-machine-smb mount
+
+	> Mount "projects" share in docker machine
 
 { /c/Users/alex/projects } » docker-machine-smb remove
 
