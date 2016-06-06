@@ -21,15 +21,15 @@ Usage: docker-machine-smb <machine-name> [add|remove]
 
 Examples:
 
-{ /c/Users/alex/projects } » docker-machine-smb add
+$ docker-machine-smb add
 
     > Share c:\Users\alex\projects folder via SMB
 
-{ /c/Users/alex/projects } » docker-machine-smb mount
+$ docker-machine-smb mount
 
     > Mount "projects" share in docker machine
 
-{ /c/Users/alex/projects } » docker-machine-smb remove
+$ docker-machine-smb remove
 
     > Stop sharing c:\Users\alex\projects via SMB
 ```
