@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Prevent Windows bash (esp. Git for Windows' bash) from translating "/" to "\",
+# which breaks all the cli commands' parameters.
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
+
 # Console colors
 red='\033[0;31m'
 green='\033[0;32m'
@@ -24,6 +29,10 @@ DOCKER_SMB_SHAREPATH=$(cygpath -w /c/projects2)
 winsudo()
 {
 	cygstart --action=runas cmd /c "$@"
+
+	# Replace the above line with the one below to use this script outside of cygwin, but
+	# make sure you're running the bash command line as Administrator beforehand.
+	# cmd /c "$@"
 }
 
 # Method to create the user and SMB network share on Windows.
@@ -106,7 +115,9 @@ EOF
 DOCKER_MACHINE_NAME="$1"
 shift
 
-CYGWIN_PWD=$(pwd)
+# https://cygwin.com/ml/cygwin/2010-05/msg00523.html
+CYGWIN_PWD=$(cd -P .; pwd)
+
 DOCKER_SMB_SHAREPATH=$(cygpath -w $CYGWIN_PWD)
 DOCKER_SMB_SHARENAME=$(basename $CYGWIN_PWD)
 
