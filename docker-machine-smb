@@ -76,7 +76,9 @@ smb_share_mount()
 	command_mount="sudo mkdir -p $CYGWIN_PWD && sudo mount -t cifs -o noperm,sec=ntlm,username='${DOCKER_SMB_USERNAME}',pass='${DOCKER_SMB_PASSWORD}',dir_mode=0777,file_mode=0777 //${DOCKER_HOST_IP}/${DOCKER_SMB_SHARENAME} $CYGWIN_PWD"
 	# sudo mount -t cifs -o noperm,sec=ntlm,username=docker,pass="P@ssW0rd1!",dir_mode=0777,file_mode=0777 //192.168.99.1/projects2 /c/projects2
 
-	docker-machine ssh ${DOCKER_MACHINE_NAME} "$command_mount"
+	echo-green "Mounting SMB share //${DOCKER_HOST_IP}/${DOCKER_SMB_SHARENAME} in guest's ${CYGWIN_PWD}"
+
+    docker-machine ssh ${DOCKER_MACHINE_NAME} "$command_mount" && echo-green "Done."
 }
 
 usage()
